@@ -21,7 +21,6 @@ spec:
       from:
         kind: ImageStreamTag
         name: nginx:1.18-ubi7
-        namespace: openshift
     type: Source
   successfulBuildsHistoryLimit: 5
   triggers:
