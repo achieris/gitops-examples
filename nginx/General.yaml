@@ -24,10 +24,6 @@ spec:
     type: Source
   successfulBuildsHistoryLimit: 5
   triggers:
-  - generic:
-      secretReference:
-        name: nginx-ex-generic-webhook-secret
-    type: Generic
   - imageChange: {}
     type: ImageChange
   - type: ConfigChange
