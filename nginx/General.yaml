@@ -55,7 +55,6 @@ spec:
     type: Rolling
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: nginx-ex
         deploymentconfig: nginx-ex
