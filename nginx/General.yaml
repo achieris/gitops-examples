@@ -1,0 +1,118 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: nginx-ex
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: nginx-ex:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    git:
+      uri: https://github.com/sclorg/nginx-ex.git
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: nginx:1.18-ubi7
+        namespace: openshift
+    type: Source
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - generic:
+      secretReference:
+        name: nginx-ex-generic-webhook-secret
+    type: Generic
+  - imageChange: {}
+    type: ImageChange
+  - type: ConfigChange
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: nginx-ex
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: nginx-ex
+    deploymentconfig: nginx-ex
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-ex
+        deploymentconfig: nginx-ex
+    spec:
+      containers:
+      - imagePullPolicy: Always
+        name: nginx-ex
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        resources: {}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  test: false
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - nginx-ex
+      from:
+        kind: ImageStreamTag
+        name: nginx-ex:latest
+    type: ImageChange
+  - type: ConfigChange
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ex
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: 8443-tcp
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: nginx-ex
+    deploymentconfig: nginx-ex
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: nginx-ex
+spec:
+  lookupPolicy:
+    local: false
+
+
+
