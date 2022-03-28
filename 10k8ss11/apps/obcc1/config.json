@@ -1,11 +1,16 @@
-{
-  "name": "obcc1",
-  "size": {
-    "name": "small",
-    "cpu": "4",
-    "memory": "8G",
-    "limits": {
+{ 
+  "values": {
+     "global": {
+       "name": "obcc1",
+       "size": {
+       "name": "small",
        "cpu": "4",
-       "memory": "8G"
+       "memory": "8G",
+       "limits": {
+         "cpu": "4",
+         "memory": "8G"
+       }
+    } 
   }
 }
+       
