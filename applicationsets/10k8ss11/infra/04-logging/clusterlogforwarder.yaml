@@ -1,0 +1,34 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+spec:
+  outputs:
+  - name: forward-app
+    type: fluentdForward
+    url: tcp://sgsvrgwelks11lx.sistemi.group:10011
+  - name: forward-audit
+    type: fluentdForward
+    url: tcp://sgsvrgwelks11lx.sistemi.group:10012
+  - name: forward-infra
+    type: fluentdForward
+    url: tcp://sgsvrgwelks11lx.sistemi.group:10013
+  pipelines:
+  - inputRefs:
+    - application
+    name: forward-app-to-remote
+    outputRefs:
+    - forward-app
+  - inputRefs:
+    - audit
+    name: forward-audit-to-remote
+    outputRefs:
+    - forward-audit
+  - inputRefs:
+    - infrastructure
+    name: forward-infra-to-remote
+    outputRefs:
+    - forward-infra

@@ -1,0 +1,145 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: ldap-group-syncer
+  namespace: openshift-authentication
+  labels:
+    app: cronjob-ldap-group-sync
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ldap-group-syncer
+  labels:
+    app: cronjob-ldap-group-sync
+rules:
+  - apiGroups:
+      - ''
+      - user.openshift.io
+    resources:
+      - groups
+    verbs:
+      - get
+      - list
+      - create
+      - update
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ldap-group-syncer
+  labels:
+    app: cronjob-ldap-group-sync
+subjects:
+  - kind: ServiceAccount
+    name: ldap-group-syncer
+    namespace: openshift-authentication
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ldap-group-syncer
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: ldap-group-syncer
+  namespace: openshift-authentication
+  labels:
+    app: cronjob-ldap-group-sync
+data:
+  ldap-group-sync.yaml: |
+    kind: LDAPSyncConfig
+    apiVersion: v1
+    url: "ldaps://ldap-sedi.sedi-direzioni.group:636"
+    insecure: false
+    ca: "/etc/ldap-ca/ca.crt"
+    bindDN: "CN=sa_10K8S-Svil,OU=Servizi,OU=Area Tecnica,DC=SISTEMI,DC=group"
+    bindPassword: 
+      file: "/etc/secrets/bindPassword"
+    augmentedActiveDirectory:
+        groupsQuery:
+            baseDN: "DC=sedi-direzioni,DC=group"
+            scope: "sub"
+            derefAliases: "never"
+            pageSize: 1000
+        groupUIDAttribute: "dn"
+        groupNameAttributes: ["cn"]
+        usersQuery:
+            baseDN: "DC=sedi-direzioni,DC=group"
+            scope: "sub"
+            derefAliases: "never"
+            pageSize: 1000
+            filter: "(objectclass=person)"
+        userNameAttributes: ["sAMAccountName"]
+        groupMembershipAttributes: ["memberOf"]
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: ldap-group-syncer-whitelist
+  namespace: openshift-authentication
+  labels:
+    app: cronjob-ldap-group-sync
+data:
+  whitelist.txt: |
+    CN=dgSISTE_SVIL_10K8S_02,OU=SISTE,OU=Applicazioni,OU=Area Tecnica,DC=sedi-direzioni,DC=group
+---
+kind: CronJob
+apiVersion: batch/v1beta1
+metadata:
+  name: ldap-group-syncer
+  namespace: openshift-authentication
+  labels:
+    app: cronjob-ldap-group-sync
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: cronjob-ldap-group-sync
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: cronjob-ldap-group-sync
+        spec:
+          containers:
+            - name: ldap-group-sync
+              image: "10k8s-crsis.intranet.servizi:5000/origin-cli:latest"
+              command:
+                - "/bin/bash"
+                - "-c"
+                - oc adm groups sync --sync-config=/etc/config/ldap-group-sync.yaml --whitelist=/etc/whitelist/whitelist.txt --confirm
+              volumeMounts:
+                - mountPath: "/etc/config"
+                  name: "ldap-sync-volume"
+                - mountPath: "/etc/whitelist"
+                  name: "ldap-sync-whitelist-volume"
+                - mountPath: "/etc/secrets"
+                  name: "ldap-bind-password"
+                - mountPath: "/etc/ldap-ca"
+                  name: "ldap-ca"
+          volumes:
+            - name: "ldap-sync-volume"
+              configMap:
+                name: "ldap-group-syncer"
+            - name: "ldap-sync-whitelist-volume"
+              configMap:
+                name: "ldap-group-syncer-whitelist"
+            - name: "ldap-bind-password"
+              secret:
+                secretName: "v4-0-config-user-idp-0-bind-password"
+            - name: "ldap-ca"
+              configMap:
+                name: "v4-0-config-user-idp-0-ca"
+          restartPolicy: "Never"
+          terminationGracePeriodSeconds: 30
+          activeDeadlineSeconds: 500
+          dnsPolicy: "ClusterFirst"
+          serviceAccountName: "ldap-group-syncer"
+          serviceAccount: "ldap-group-syncer"

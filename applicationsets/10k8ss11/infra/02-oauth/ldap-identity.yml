@@ -1,0 +1,26 @@
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - ldap:
+      attributes:
+        email:
+        - mail
+        id:
+        - sAMAccountName
+        name:
+        - cn
+        preferredUsername:
+        - sAMAccountName
+      bindDN: CN=sa_10K8S-Svil,OU=Servizi,OU=Area Tecnica,DC=SISTEMI,DC=group
+      bindPassword:
+        name: ldap-secret
+      ca:
+        name: ca-config-map
+      insecure: false
+      url: ldaps://ldap-sedi.sedi-direzioni.group:636/DC=sedi-direzioni,DC=group?sAMAccountName?sub?(objectClass=person)
+    mappingMethod: claim
+    name: ldap-ci
+    type: LDAP
