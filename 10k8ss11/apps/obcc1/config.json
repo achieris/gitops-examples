@@ -1,4 +1,6 @@
 {
-   "name": "obcc1"
+   "application": {
+     "name": "obcc1"
+   }
 }
        
