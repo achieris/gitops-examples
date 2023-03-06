@@ -12,7 +12,7 @@ metadata:
 spec:
   host: ""
   port:
-    targetPort: 8080
+    targetPort: 8090
   to:
     kind: Service
     name: pricelist
