@@ -8,5 +8,5 @@ resources:
 #- pricelist-job.yaml
 - pricelist-namespace.yaml
 #- pricelist-quota.yaml
-- pricelist-route.yaml
+#- pricelist-route.yaml
 - pricelist-svc.yaml
